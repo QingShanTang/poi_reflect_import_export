@@ -3,6 +3,8 @@ package org.qingshan.demo.util;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
 
 import org.apache.poi.ss.usermodel.*;
@@ -351,5 +353,40 @@ public class ExcelUtils {
             return val;
         }
         return val;
+    }
+
+    /**
+     * 刷新表格中公式类型的单元格，也就是说将所有公式计算然后保存计算后的值
+     *
+     * @param wb
+     * @param sheetIndex
+     */
+    public void updateFormula(Workbook wb, Integer sheetIndex) {
+        FormulaEvaluator eval = null;
+        Sheet sheet = wb.getSheetAt(sheetIndex);
+        Integer firstRowNum = sheet.getFirstRowNum();
+        Integer lastRowNum = sheet.getLastRowNum();
+        if (wb instanceof HSSFWorkbook) {
+            eval = new HSSFFormulaEvaluator((HSSFWorkbook) wb);
+        } else if (wb instanceof XSSFWorkbook) {
+            eval = new XSSFFormulaEvaluator((XSSFWorkbook) wb);
+        } else {
+            throw new RuntimeException("Abnormal format table");
+        }
+        for (int i = firstRowNum; i < lastRowNum + 1; i++) {
+            Row row = sheet.getRow(i);
+            if (null != row) {
+                short firstCellNum = row.getFirstCellNum();
+                short lastCellNum = row.getLastCellNum();
+                for (int j = firstCellNum; j < lastCellNum + 1; j++) {
+                    Cell cell = row.getCell(j);
+                    if (null != cell) {
+                        if (cell.getCellType() == Cell.CELL_TYPE_FORMULA) {
+                            eval.evaluateFormulaCell(cell);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
